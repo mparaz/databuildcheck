@@ -6,7 +6,7 @@ WITH active_users AS (
         email_address,
         created_at,
         updated_at
-    FROM raw_users
+    FROM raw_db.raw.raw_users
     WHERE active = true
 ),
 user_stats AS (
@@ -14,7 +14,7 @@ user_stats AS (
         user_id,
         count(*) as order_count,
         sum(amount) as total_spent
-    FROM orders
+    FROM raw_db.raw.raw_orders
     GROUP BY user_id
 )
 SELECT

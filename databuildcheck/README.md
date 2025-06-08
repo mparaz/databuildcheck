@@ -34,21 +34,32 @@ databuildcheck --manifest path/to/manifest.json --compiled-sql path/to/compiled/
 - `--compiled-sql` / `-c`: Path to the directory containing compiled SQL files (required)
 - `--dialect` / `-d`: SQL dialect for parsing (e.g., `postgres`, `snowflake`, `bigquery`) (required)
 - `--verbose` / `-v`: Enable verbose output (optional)
+- `--check-tables` / `-t`: Enable table reference checking (optional)
+- `--database-substitution`: Database name substitution in format 'original=substitute' (optional, can be used multiple times)
+- `--schema-substitution`: Schema name substitution in format 'original=substitute' (optional, can be used multiple times)
 
 ### Example
 
 ```console
-# Check models using PostgreSQL dialect
+# Check columns only using PostgreSQL dialect
 databuildcheck -m target/manifest.json -c target/compiled/my_project/models -d postgres
 
-# Verbose output
-databuildcheck -m target/manifest.json -c target/compiled/my_project/models -d snowflake --verbose
+# Check both columns and table references
+databuildcheck -m target/manifest.json -c target/compiled/my_project/models -d postgres --check-tables
+
+# With database and schema substitutions (useful for different environments)
+databuildcheck -m target/manifest.json -c target/compiled/my_project/models -d snowflake \
+  --check-tables \
+  --database-substitution "dev_db=prod_db" \
+  --schema-substitution "staging=raw" \
+  --verbose
 ```
 
 ### What it checks
 
 The tool performs the following validations:
 
+#### Column Checking (always enabled)
 1. **Model Discovery**: Finds all models in the dbt manifest (nodes starting with "model.")
 2. **SQL File Resolution**: Locates the corresponding compiled SQL file for each model
 3. **SQL Parsing**: Parses the SQL using sqlglot with the specified dialect
@@ -57,7 +68,18 @@ The tool performs the following validations:
    - Missing columns (defined in manifest but not in SQL)
    - Extra columns (present in SQL but not defined in manifest)
 
-**Note**: The tool correctly handles complex SQL with CTEs (Common Table Expressions) and subqueries by only analyzing the final/outermost SELECT statement that produces the model's output.
+#### Table Reference Checking (enabled with `--check-tables`)
+1. **Table Reference Extraction**: Extracts all table references from FROM and JOIN clauses (excludes CTE names)
+2. **Manifest Validation**: Verifies that all referenced tables exist in the dbt manifest as either:
+   - Models (other dbt models)
+   - Sources (external data sources defined in dbt)
+3. **Substitution Support**: Applies database and schema name substitutions to extracted table references
+4. **Reference Validation**: Reports any tables that are referenced but not defined in the manifest
+
+#### Key Features
+- **CTE Handling**: Correctly handles complex SQL with CTEs by excluding CTE names from table reference validation
+- **Environment Flexibility**: Database and schema substitutions allow the same manifest to work across different environments
+- **Comprehensive Coverage**: Checks both column consistency and table reference validity
 
 ### Exit Codes
 

@@ -52,6 +52,16 @@ def sample_manifest_data():
                 "original_file_path": "tests/test_my_model.sql",
             },
         },
+        "sources": {
+            "source.my_project.raw.raw_users": {
+                "name": "raw_users",
+                "unique_id": "source.my_project.raw.raw_users",
+                "resource_type": "source",
+                "package_name": "my_project",
+                "database": "raw_db",
+                "schema": "raw",
+            },
+        },
     }
 
 
@@ -145,3 +155,49 @@ def test_get_models_info(manifest_file):
     assert len(model1["columns"]) == 2
     assert model1["resource_type"] == "model"
     assert model1["package_name"] == "my_project"
+
+
+def test_get_source_nodes(manifest_file):
+    """Test getting source nodes from the manifest."""
+    manifest = DbtManifest(manifest_file)
+    source_nodes = manifest.get_source_nodes()
+
+    assert len(source_nodes) == 1
+    assert "source.my_project.raw.raw_users" in source_nodes
+
+
+def test_get_all_referenceable_tables(manifest_file):
+    """Test getting all referenceable tables from the manifest."""
+    manifest = DbtManifest(manifest_file)
+    referenceable_tables = manifest.get_all_referenceable_tables()
+
+    # Should contain models and sources in various reference formats
+    assert len(referenceable_tables) > 0
+
+    # Check that we have entries for models
+    model_refs = [ref for ref, data in referenceable_tables.items() if data["type"] == "model"]
+    assert len(model_refs) > 0
+
+    # Check that we have entries for sources
+    source_refs = [ref for ref, data in referenceable_tables.items() if data["type"] == "source"]
+    assert len(source_refs) > 0
+
+
+def test_generate_table_references(manifest_file):
+    """Test generating table reference formats."""
+    manifest = DbtManifest(manifest_file)
+
+    # Test with full database.schema.table
+    refs = manifest._generate_table_references("users", "public", "analytics")
+    expected_refs = ["users", "public.users", "analytics.public.users"]
+    assert set(refs) == set(expected_refs)
+
+    # Test with only schema.table
+    refs = manifest._generate_table_references("users", "public", "")
+    expected_refs = ["users", "public.users"]
+    assert set(refs) == set(expected_refs)
+
+    # Test with only table name
+    refs = manifest._generate_table_references("users", "", "")
+    expected_refs = ["users"]
+    assert set(refs) == set(expected_refs)

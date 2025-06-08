@@ -8,7 +8,7 @@ WITH user_details AS (
         address,       -- This column is NOT in the final SELECT
         created_at,
         updated_at
-    FROM raw_users
+    FROM raw_db.raw.raw_users
     WHERE active = true
 )
 SELECT

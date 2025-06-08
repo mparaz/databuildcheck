@@ -36,6 +36,16 @@ def sample_manifest_data():
                 },
             },
         },
+        "sources": {
+            "source.my_project.raw.raw_users": {
+                "name": "raw_users",
+                "unique_id": "source.my_project.raw.raw_users",
+                "resource_type": "source",
+                "package_name": "my_project",
+                "database": "raw_db",
+                "schema": "raw",
+            },
+        },
     }
 
 
@@ -186,3 +196,75 @@ def test_cli_column_mismatch(test_files):
     assert "Column mismatch detected" in result.output
     assert "Missing in SQL: email" in result.output
     assert "Some checks failed" in result.output
+
+
+def test_cli_with_table_check(test_files):
+    """Test CLI with table reference checking enabled."""
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "--manifest",
+            str(test_files["manifest"]),
+            "--compiled-sql",
+            str(test_files["sql_dir"]),
+            "--dialect",
+            "postgres",
+            "--check-tables",
+        ],
+    )
+
+    if result.exit_code != 0:
+        print(f"CLI output: {result.output}")
+    assert result.exit_code == 0
+    assert "Checking table references" in result.output
+
+
+def test_cli_with_substitutions(test_files):
+    """Test CLI with database and schema substitutions."""
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "--manifest",
+            str(test_files["manifest"]),
+            "--compiled-sql",
+            str(test_files["sql_dir"]),
+            "--dialect",
+            "postgres",
+            "--check-tables",
+            "--database-substitution",
+            "old_db=new_db",
+            "--schema-substitution",
+            "old_schema=new_schema",
+            "--verbose",
+        ],
+    )
+
+    if result.exit_code != 0:
+        print(f"CLI output: {result.output}")
+    assert result.exit_code == 0
+    assert "Substitutions:" in result.output
+    assert "Database: old_db → new_db" in result.output
+    assert "Schema: old_schema → new_schema" in result.output
+
+
+def test_cli_invalid_substitution_format(test_files):
+    """Test CLI with invalid substitution format."""
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "--manifest",
+            str(test_files["manifest"]),
+            "--compiled-sql",
+            str(test_files["sql_dir"]),
+            "--dialect",
+            "postgres",
+            "--database-substitution",
+            "invalid_format",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert "Invalid substitution format" in result.output

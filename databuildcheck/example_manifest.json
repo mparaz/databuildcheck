@@ -25,6 +25,27 @@
         }
       }
     },
+    "model.my_project.orders": {
+      "name": "orders",
+      "unique_id": "model.my_project.orders",
+      "resource_type": "model",
+      "package_name": "my_project",
+      "original_file_path": "models/orders.sql",
+      "columns": {
+        "id": {
+          "name": "id",
+          "data_type": "integer"
+        },
+        "user_id": {
+          "name": "user_id",
+          "data_type": "integer"
+        },
+        "amount": {
+          "name": "amount",
+          "data_type": "decimal"
+        }
+      }
+    },
     "model.my_project.users_with_extra_cte_columns": {
       "name": "users_with_extra_cte_columns",
       "unique_id": "model.my_project.users_with_extra_cte_columns",
@@ -45,6 +66,24 @@
           "data_type": "varchar"
         }
       }
+    }
+  },
+  "sources": {
+    "source.my_project.raw.raw_users": {
+      "name": "raw_users",
+      "unique_id": "source.my_project.raw.raw_users",
+      "resource_type": "source",
+      "package_name": "my_project",
+      "database": "raw_db",
+      "schema": "raw"
+    },
+    "source.my_project.raw.raw_orders": {
+      "name": "raw_orders",
+      "unique_id": "source.my_project.raw.raw_orders",
+      "resource_type": "source",
+      "package_name": "my_project",
+      "database": "raw_db",
+      "schema": "raw"
     }
   }
 }
