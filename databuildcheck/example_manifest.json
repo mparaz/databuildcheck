@@ -1,0 +1,50 @@
+{
+  "metadata": {
+    "dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v12/index.html",
+    "dbt_version": "1.8.0"
+  },
+  "nodes": {
+    "model.my_project.users": {
+      "name": "users",
+      "unique_id": "model.my_project.users",
+      "resource_type": "model",
+      "package_name": "my_project",
+      "original_file_path": "models/users.sql",
+      "columns": {
+        "id": {
+          "name": "id",
+          "data_type": "integer"
+        },
+        "name": {
+          "name": "name",
+          "data_type": "varchar"
+        },
+        "email": {
+          "name": "email",
+          "data_type": "varchar"
+        }
+      }
+    },
+    "model.my_project.users_with_extra_cte_columns": {
+      "name": "users_with_extra_cte_columns",
+      "unique_id": "model.my_project.users_with_extra_cte_columns",
+      "resource_type": "model",
+      "package_name": "my_project",
+      "original_file_path": "models/users_with_extra_cte_columns.sql",
+      "columns": {
+        "id": {
+          "name": "id",
+          "data_type": "integer"
+        },
+        "name": {
+          "name": "name",
+          "data_type": "varchar"
+        },
+        "email": {
+          "name": "email",
+          "data_type": "varchar"
+        }
+      }
+    }
+  }
+}

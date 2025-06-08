@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-from databuildcheck.__about__ import __version__
+"""A tool to validate and check data build processes."""
 
-__all__ = ["__version__"]
+from databuildcheck.__about__ import __version__
+from databuildcheck.checks.sql_column_check import SqlColumnChecker
+from databuildcheck.manifest import DbtManifest
+
+__all__ = ["__version__", "DbtManifest", "SqlColumnChecker"]

@@ -8,6 +8,7 @@
 ## Table of Contents
 
 - [Installation](#installation)
+- [Usage](#usage)
 - [Development](#development)
 - [License](#license)
 
@@ -16,6 +17,53 @@
 ```console
 pip install databuildcheck
 ```
+
+## Usage
+
+`databuildcheck` is a command-line tool that validates dbt models by comparing the columns defined in your dbt manifest with the actual columns in your compiled SQL files.
+
+### Basic Usage
+
+```console
+databuildcheck --manifest path/to/manifest.json --compiled-sql path/to/compiled/sql --dialect postgres
+```
+
+### Parameters
+
+- `--manifest` / `-m`: Path to your dbt `manifest.json` file (required)
+- `--compiled-sql` / `-c`: Path to the directory containing compiled SQL files (required)
+- `--dialect` / `-d`: SQL dialect for parsing (e.g., `postgres`, `snowflake`, `bigquery`) (required)
+- `--verbose` / `-v`: Enable verbose output (optional)
+
+### Example
+
+```console
+# Check models using PostgreSQL dialect
+databuildcheck -m target/manifest.json -c target/compiled/my_project/models -d postgres
+
+# Verbose output
+databuildcheck -m target/manifest.json -c target/compiled/my_project/models -d snowflake --verbose
+```
+
+### What it checks
+
+The tool performs the following validations:
+
+1. **Model Discovery**: Finds all models in the dbt manifest (nodes starting with "model.")
+2. **SQL File Resolution**: Locates the corresponding compiled SQL file for each model
+3. **SQL Parsing**: Parses the SQL using sqlglot with the specified dialect
+4. **Column Extraction**: Extracts column names from the final SELECT statement (ignores CTEs and subqueries)
+5. **Column Comparison**: Compares manifest columns with SQL columns and reports:
+   - Missing columns (defined in manifest but not in SQL)
+   - Extra columns (present in SQL but not defined in manifest)
+
+**Note**: The tool correctly handles complex SQL with CTEs (Common Table Expressions) and subqueries by only analyzing the final/outermost SELECT statement that produces the model's output.
+
+### Exit Codes
+
+- `0`: All checks passed
+- `1`: Some checks failed (column mismatches or other validation errors)
+- `2`: Invalid command line arguments
 
 ## Development
 

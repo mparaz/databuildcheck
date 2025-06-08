@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "databuildcheck"
 dynamic = ["version"]
-description = 'A tool to validate and check data build processes.'
+description = 'A tool to validate and check dbt models by comparing manifest columns with compiled SQL'
 readme = "README.md"
 requires-python = ">=3.8"
 license = "MIT"
@@ -24,7 +24,13 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = []
+dependencies = [
+  "click>=8.0.0",
+  "sqlglot>=25.0.0",
+]
+
+[project.scripts]
+databuildcheck = "databuildcheck.cli:main"
 
 [project.urls]
 Documentation = "https://github.com/mparaz/databuildcheck#readme"
