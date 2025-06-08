@@ -167,6 +167,8 @@ class ManifestRequirementsChecker:
                         f"expected '{required_data_type}'"
                     )
 
+
+
         return errors
 
     def _validate_column_descriptions(
