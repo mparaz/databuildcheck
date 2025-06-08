@@ -12,7 +12,9 @@ from typing import Any, Dict, List
 class DbtManifest:
     """Class for loading and working with dbt manifest.json files."""
 
-    def __init__(self, manifest_path: str | Path, restrict_to_files: set[str] | None = None) -> None:
+    def __init__(
+        self, manifest_path: str | Path, restrict_to_files: set[str] | None = None
+    ) -> None:
         """Initialize the manifest loader.
 
         Args:
@@ -79,7 +81,10 @@ class DbtManifest:
                 patch_path = patch_path.split("://", 1)[1]
 
             # Include model if either SQL file or YAML file is in the restrict list
-            if original_file_path in self.restrict_to_files or patch_path in self.restrict_to_files:
+            if (
+                original_file_path in self.restrict_to_files
+                or patch_path in self.restrict_to_files
+            ):
                 filtered_nodes[node_id] = node_data
 
         return filtered_nodes

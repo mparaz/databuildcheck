@@ -64,8 +64,8 @@ def _load_file_list(file_path: Path) -> set[str]:
                     normalized_path = line.replace("\\", "/")
                     files.add(normalized_path)
             return files
-    except FileNotFoundError:
-        raise FileNotFoundError(f"File list not found: {file_path}")
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f"File list not found: {file_path}") from e
     except Exception as e:
         raise ValueError(f"Error reading file list: {e}") from e
 
@@ -189,7 +189,9 @@ def main(
 
         model_nodes = dbt_manifest.get_model_nodes()
         if restrict_to_files:
-            click.echo(f"✅ Found {len(model_nodes)} model(s) in manifest (restricted to specified files)")
+            click.echo(
+                f"✅ Found {len(model_nodes)} model(s) in manifest (restricted to specified files)"
+            )
         else:
             click.echo(f"✅ Found {len(model_nodes)} model(s) in manifest")
 
