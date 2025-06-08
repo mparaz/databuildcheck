@@ -12,13 +12,15 @@ from typing import Any, Dict, List
 class DbtManifest:
     """Class for loading and working with dbt manifest.json files."""
 
-    def __init__(self, manifest_path: str | Path) -> None:
+    def __init__(self, manifest_path: str | Path, restrict_to_files: set[str] | None = None) -> None:
         """Initialize the manifest loader.
 
         Args:
             manifest_path: Path to the manifest.json file
+            restrict_to_files: Optional set of file paths to restrict model processing to
         """
         self.manifest_path = Path(manifest_path)
+        self.restrict_to_files = restrict_to_files
         self._manifest_data: Dict[str, Any] = {}
         self._load_manifest()
 
@@ -51,12 +53,36 @@ class DbtManifest:
 
         Returns:
             Dictionary of model nodes (nodes with unique_id starting with 'model.')
+            If restrict_to_files is set, only returns models whose patch_path (YAML) or
+            original_file_path (SQL) are in the restriction set.
         """
-        return {
+
+        all_model_nodes = {
             node_id: node_data
             for node_id, node_data in self.nodes.items()
             if node_id.startswith("model.")
         }
+
+        if self.restrict_to_files is None:
+            return all_model_nodes
+
+        # Filter based on file paths
+        filtered_nodes = {}
+        for node_id, node_data in all_model_nodes.items():
+            # Normalize paths for comparison
+            original_file_path = node_data.get("original_file_path", "")
+
+            # Handle patch_path which may have package prefix like "jaffle_shop://models/staging/stg_products.yml"
+            patch_path = node_data.get("patch_path", "")
+
+            if patch_path is not None:
+                patch_path = patch_path.split("://", 1)[1]
+
+            # Include model if either SQL file or YAML file is in the restrict list
+            if original_file_path in self.restrict_to_files or patch_path in self.restrict_to_files:
+                filtered_nodes[node_id] = node_data
+
+        return filtered_nodes
 
     def get_model_columns(self, node_id: str) -> Dict[str, Any]:
         """Get columns for a specific model node.

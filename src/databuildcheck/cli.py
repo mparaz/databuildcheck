@@ -41,6 +41,35 @@ def _parse_substitutions(substitution_strings: tuple[str, ...]) -> dict[str, str
     return substitutions
 
 
+def _load_file_list(file_path: Path) -> set[str]:
+    """Load list of files from a text file.
+
+    Args:
+        file_path: Path to file containing list of files (one per line)
+
+    Returns:
+        Set of file paths (relative paths, normalized)
+
+    Raises:
+        FileNotFoundError: If file doesn't exist
+        ValueError: If file cannot be read
+    """
+    try:
+        with open(file_path, encoding="utf-8") as f:
+            files = set()
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#"):  # Skip empty lines and comments
+                    # Normalize path separators
+                    normalized_path = line.replace("\\", "/")
+                    files.add(normalized_path)
+            return files
+    except FileNotFoundError:
+        raise FileNotFoundError(f"File list not found: {file_path}")
+    except Exception as e:
+        raise ValueError(f"Error reading file list: {e}") from e
+
+
 @click.command()
 @click.option(
     "--manifest",
@@ -96,6 +125,11 @@ def _parse_substitutions(substitution_strings: tuple[str, ...]) -> dict[str, str
     type=click.Path(exists=True, path_type=Path),
     help="Path to requirements configuration YAML file (required when --check-requirements is used)",
 )
+@click.option(
+    "--restrict-to-files",
+    type=click.Path(exists=True, path_type=Path),
+    help="Path to file containing list of YAML and SQL files to restrict processing to (one file per line)",
+)
 def main(
     manifest: Path,
     compiled_sql: Path,
@@ -106,6 +140,7 @@ def main(
     schema_substitution: tuple[str, ...],
     check_requirements: bool,
     requirements_config: Path | None,
+    restrict_to_files: Path | None,
 ) -> None:
     """Check dbt models for consistency between manifest and compiled SQL."""
     click.echo("🔍 Starting databuildcheck...")
@@ -125,6 +160,8 @@ def main(
         click.echo(f"🔍 Check requirements: {check_requirements}")
         if requirements_config:
             click.echo(f"📋 Requirements config: {requirements_config}")
+        if restrict_to_files:
+            click.echo(f"📄 Restrict to files: {restrict_to_files}")
 
     try:
         # Parse substitutions
@@ -138,12 +175,23 @@ def main(
             for orig, sub in schema_substitutions.items():
                 click.echo(f"   Schema: {orig} → {sub}")
 
+        # Load file restriction list if provided
+        restrict_files = None
+        if restrict_to_files:
+            click.echo(f"📄 Loading file restriction list from {restrict_to_files}...")
+            restrict_files = _load_file_list(restrict_to_files)
+            if verbose:
+                click.echo(f"   Restricting to {len(restrict_files)} file(s)")
+
         # Load the manifest
         click.echo("📖 Loading dbt manifest...")
-        dbt_manifest = DbtManifest(manifest)
+        dbt_manifest = DbtManifest(manifest, restrict_files)
 
         model_nodes = dbt_manifest.get_model_nodes()
-        click.echo(f"✅ Found {len(model_nodes)} model(s) in manifest")
+        if restrict_to_files:
+            click.echo(f"✅ Found {len(model_nodes)} model(s) in manifest (restricted to specified files)")
+        else:
+            click.echo(f"✅ Found {len(model_nodes)} model(s) in manifest")
 
         # Initialize checkers
         column_checker = SqlColumnChecker(dbt_manifest, compiled_sql, dialect)
