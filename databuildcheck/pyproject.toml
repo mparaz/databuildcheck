@@ -1,0 +1,114 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "databuildcheck"
+dynamic = ["version"]
+description = 'A tool to validate and check data build processes.'
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "Miguel Paraz", email = "mparaz@mparaz.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = []
+
+[project.urls]
+Documentation = "https://github.com/mparaz/databuildcheck#readme"
+Issues = "https://github.com/mparaz/databuildcheck/issues"
+Source = "https://github.com/mparaz/databuildcheck"
+
+[tool.hatch.version]
+path = "src/databuildcheck/__about__.py"
+
+[tool.hatch.envs.default]
+installer = "uv"
+dependencies = [
+  "coverage[toml]>=6.5",
+  "pytest",
+  "ruff>=0.1.0",
+]
+[tool.hatch.envs.default.scripts]
+test = "pytest {args:tests}"
+test-cov = "coverage run -m pytest {args:tests}"
+cov-report = [
+  "- coverage combine",
+  "coverage report",
+]
+cov = [
+  "test-cov",
+  "cov-report",
+]
+lint = "ruff check {args:.}"
+format = "ruff format {args:.}"
+format-check = "ruff format --check {args:.}"
+lint-fix = "ruff check --fix {args:.}"
+
+[tool.hatch.envs.types]
+installer = "uv"
+dependencies = [
+  "mypy>=1.0.0",
+]
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/databuildcheck tests}"
+
+[tool.coverage.run]
+source = ["databuildcheck", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/databuildcheck/__about__.py",
+]
+
+[tool.coverage.paths]
+databuildcheck = ["src/databuildcheck", "*/databuildcheck/src/databuildcheck"]
+tests = ["tests", "*/databuildcheck/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
+
+[tool.ruff]
+target-version = "py38"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["databuildcheck"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
