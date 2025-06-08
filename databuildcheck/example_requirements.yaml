@@ -1,0 +1,29 @@
+# Example requirements configuration for testing
+required_columns:
+  always:
+    - name: "created_at"
+      description: "Timestamp when the record was created"
+      data_type: "timestamp"
+    - name: "updated_at" 
+      description: "Timestamp when the record was last updated"
+      data_type: "timestamp"
+
+materialization_requirements:
+  table:
+    required_columns:
+      - name: "id"
+        description: "Primary key for the table"
+        data_type: "integer"
+
+column_validation:
+  require_descriptions:
+    - "id"
+    - "name"
+    - "email"
+
+model_requirements:
+  require_description: true
+
+exclusions:
+  description_exempt:
+    - "users_with_extra_cte_columns"

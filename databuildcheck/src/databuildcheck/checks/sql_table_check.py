@@ -144,7 +144,9 @@ class SqlTableChecker:
             table_name = parts[0]
             return table_name.lower()
 
-    def _apply_table_reference_substitutions(self, table_references: Set[str]) -> Set[str]:
+    def _apply_table_reference_substitutions(
+        self, table_references: Set[str]
+    ) -> Set[str]:
         """Apply database and schema substitutions to table references after parsing.
 
         Args:
@@ -244,7 +246,9 @@ class SqlTableChecker:
         raw_table_references = self._extract_table_references(parsed_sql)
 
         # Apply substitutions to table references
-        table_references = self._apply_table_reference_substitutions(raw_table_references)
+        table_references = self._apply_table_reference_substitutions(
+            raw_table_references
+        )
         result["table_references"] = table_references
 
         # Get all referenceable tables from manifest

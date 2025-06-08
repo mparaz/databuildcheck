@@ -37,6 +37,8 @@ databuildcheck --manifest path/to/manifest.json --compiled-sql path/to/compiled/
 - `--check-tables` / `-t`: Enable table reference checking (optional)
 - `--database-substitution`: Database name substitution in format 'original=substitute' (optional, can be used multiple times)
 - `--schema-substitution`: Schema name substitution in format 'original=substitute' (optional, can be used multiple times)
+- `--check-requirements` / `-r`: Enable manifest requirements checking (optional)
+- `--requirements-config`: Path to requirements configuration YAML file (required when `--check-requirements` is used)
 
 ### Example
 
@@ -52,6 +54,18 @@ databuildcheck -m target/manifest.json -c target/compiled/my_project/models -d s
   --check-tables \
   --database-substitution "dev_db=prod_db" \
   --schema-substitution "staging=raw" \
+  --verbose
+
+# With manifest requirements checking
+databuildcheck -m target/manifest.json -c target/compiled/my_project/models -d postgres \
+  --check-requirements \
+  --requirements-config requirements.yaml
+
+# All checks enabled
+databuildcheck -m target/manifest.json -c target/compiled/my_project/models -d postgres \
+  --check-tables \
+  --check-requirements \
+  --requirements-config requirements.yaml \
   --verbose
 ```
 
@@ -76,10 +90,61 @@ The tool performs the following validations:
 3. **Substitution Support**: Applies database and schema name substitutions to extracted table references
 4. **Reference Validation**: Reports any tables that are referenced but not defined in the manifest
 
+#### Manifest Requirements Checking (enabled with `--check-requirements`)
+1. **Configuration-Based Validation**: Uses YAML configuration file to define requirements
+2. **Column Requirements**: Validates required columns based on:
+   - Global requirements (always required)
+   - Materialization type (table, view, incremental, snapshot)
+   - Incremental strategy (merge, append, delete_insert)
+   - Model tags (pii, financial, etc.)
+   - Package name
+3. **Column Validation**: Ensures columns have required descriptions and data types
+4. **Model Requirements**: Validates model-level requirements (descriptions, tests, etc.)
+5. **Flexible Exemptions**: Supports regex patterns for exempting models from specific requirements
+
 #### Key Features
 - **CTE Handling**: Correctly handles complex SQL with CTEs by excluding CTE names from table reference validation
 - **Environment Flexibility**: Database and schema substitutions allow the same manifest to work across different environments
-- **Comprehensive Coverage**: Checks both column consistency and table reference validity
+- **Configuration-Driven**: Requirements checking uses flexible YAML configuration for different validation rules
+- **Comprehensive Coverage**: Checks column consistency, table reference validity, and manifest requirements
+
+### Requirements Configuration
+
+The requirements checking feature uses a YAML configuration file to define validation rules. See `sample_config.yaml` for a comprehensive example that includes:
+
+- **Global column requirements** (always required for all models)
+- **Materialization-based requirements** (table, view, incremental, snapshot)
+- **Incremental strategy requirements** (merge, append, delete_insert)
+- **Tag-based requirements** (pii, financial, etc.)
+- **Package-based requirements** (different packages have different needs)
+- **Column validation rules** (required descriptions, data types)
+- **Model-level requirements** (descriptions, tests)
+- **Flexible exemptions** (regex patterns for excluding models)
+
+Example configuration snippet:
+```yaml
+required_columns:
+  always:
+    - name: "created_at"
+      data_type: "timestamp"
+      description: "Record creation timestamp"
+
+materialization_requirements:
+  incremental:
+    required_columns:
+      - name: "updated_at"
+        data_type: "timestamp"
+
+tag_requirements:
+  pii:
+    required_columns:
+      - name: "data_classification"
+        data_type: "string"
+
+exclusions:
+  fully_exempt:
+    - "temp_.*"  # regex pattern
+```
 
 ### Exit Codes
 

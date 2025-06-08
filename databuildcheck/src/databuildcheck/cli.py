@@ -8,6 +8,9 @@ from pathlib import Path
 
 import click
 
+from databuildcheck.checks.manifest_requirements_check import (
+    ManifestRequirementsChecker,
+)
 from databuildcheck.checks.sql_column_check import SqlColumnChecker
 from databuildcheck.checks.sql_table_check import SqlTableChecker
 from databuildcheck.manifest import DbtManifest
@@ -28,7 +31,9 @@ def _parse_substitutions(substitution_strings: tuple[str, ...]) -> dict[str, str
     substitutions = {}
     for sub_str in substitution_strings:
         if "=" not in sub_str:
-            raise ValueError(f"Invalid substitution format: '{sub_str}'. Expected 'original=substitute'")
+            raise ValueError(
+                f"Invalid substitution format: '{sub_str}'. Expected 'original=substitute'"
+            )
 
         original, substitute = sub_str.split("=", 1)
         substitutions[original.strip()] = substitute.strip()
@@ -80,6 +85,17 @@ def _parse_substitutions(substitution_strings: tuple[str, ...]) -> dict[str, str
     multiple=True,
     help="Schema name substitution in format 'original=substitute' (can be used multiple times)",
 )
+@click.option(
+    "--check-requirements",
+    "-r",
+    is_flag=True,
+    help="Enable manifest requirements checking",
+)
+@click.option(
+    "--requirements-config",
+    type=click.Path(exists=True, path_type=Path),
+    help="Path to requirements configuration YAML file (required when --check-requirements is used)",
+)
 def main(
     manifest: Path,
     compiled_sql: Path,
@@ -88,15 +104,27 @@ def main(
     check_tables: bool,
     database_substitution: tuple[str, ...],
     schema_substitution: tuple[str, ...],
+    check_requirements: bool,
+    requirements_config: Path | None,
 ) -> None:
     """Check dbt models for consistency between manifest and compiled SQL."""
     click.echo("🔍 Starting databuildcheck...")
+
+    # Validate requirements config
+    if check_requirements and not requirements_config:
+        click.echo(
+            "❌ Error: --requirements-config is required when --check-requirements is used"
+        )
+        exit(1)
 
     if verbose:
         click.echo(f"📁 Manifest file: {manifest}")
         click.echo(f"📁 Compiled SQL path: {compiled_sql}")
         click.echo(f"🗣️  SQL dialect: {dialect}")
         click.echo(f"🔍 Check tables: {check_tables}")
+        click.echo(f"🔍 Check requirements: {check_requirements}")
+        if requirements_config:
+            click.echo(f"📋 Requirements config: {requirements_config}")
 
     try:
         # Parse substitutions
@@ -127,7 +155,13 @@ def main(
                 compiled_sql,
                 dialect,
                 db_substitutions,
-                schema_substitutions
+                schema_substitutions,
+            )
+
+        requirements_checker = None
+        if check_requirements:
+            requirements_checker = ManifestRequirementsChecker(
+                dbt_manifest, requirements_config
             )
 
         # Run column checks
@@ -140,15 +174,27 @@ def main(
             click.echo("🔍 Checking table references...")
             table_results = table_checker.check_all_models()
 
+        # Run requirements checks if enabled
+        requirements_results = []
+        if check_requirements:
+            click.echo("🔍 Checking manifest requirements...")
+            requirements_results = requirements_checker.check_all_models()
+
         # Process and display results
         total_models = len(column_results)
         successful_checks = 0
         failed_checks = 0
 
-        # Create a map of table results by node_id for easy lookup
+        # Create maps of results by node_id for easy lookup
         table_results_map = {}
         if table_results:
             table_results_map = {result["node_id"]: result for result in table_results}
+
+        requirements_results_map = {}
+        if requirements_results:
+            requirements_results_map = {
+                result["node_id"]: result for result in requirements_results
+            }
 
         for result in column_results:
             node_id = result["node_id"]
@@ -207,6 +253,28 @@ def main(
                             f"   Valid references: {', '.join(sorted(table_result['valid_references']))}"
                         )
 
+            # Check requirements results if available
+            if node_id in requirements_results_map:
+                requirements_result = requirements_results_map[node_id]
+
+                if requirements_result["errors"]:
+                    if not model_failed:
+                        failed_checks += 1
+                        model_failed = True
+                    click.echo(f"❌ {node_id}: Requirements validation failed")
+                    for error in requirements_result["errors"]:
+                        click.echo(f"   {error}")
+                elif not requirements_result["requirements_valid"]:
+                    if not model_failed:
+                        failed_checks += 1
+                        model_failed = True
+                    click.echo(f"⚠️  {node_id}: Requirements not met")
+
+                # Show warnings if any
+                if verbose and requirements_result.get("warnings"):
+                    for warning in requirements_result["warnings"]:
+                        click.echo(f"   Warning: {warning}")
+
             # If no failures detected, count as successful
             if not model_failed:
                 successful_checks += 1
@@ -214,6 +282,8 @@ def main(
                     checks_passed = ["Columns match"]
                     if node_id in table_results_map:
                         checks_passed.append("Table references valid")
+                    if node_id in requirements_results_map:
+                        checks_passed.append("Requirements met")
                     click.echo(f"✅ {node_id}: {', '.join(checks_passed)}")
 
         # Summary

@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+import yaml
 from click.testing import CliRunner
 
 from databuildcheck.cli import main
@@ -268,3 +269,64 @@ def test_cli_invalid_substitution_format(test_files):
 
     assert result.exit_code == 1
     assert "Invalid substitution format" in result.output
+
+
+def test_cli_with_requirements_check(test_files):
+    """Test CLI with requirements checking enabled."""
+    # Create a simple config file
+    config_content = {
+        "required_columns": {
+            "always": [{"name": "created_at", "data_type": "timestamp"}]
+        },
+        "model_requirements": {"require_description": False},
+    }
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+        yaml.dump(config_content, f)
+        config_path = Path(f.name)
+
+    try:
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "--manifest",
+                str(test_files["manifest"]),
+                "--compiled-sql",
+                str(test_files["sql_dir"]),
+                "--dialect",
+                "postgres",
+                "--check-requirements",
+                "--requirements-config",
+                str(config_path),
+            ],
+        )
+
+        # Should fail because the test model doesn't have created_at column
+        assert result.exit_code == 1
+        assert "Checking manifest requirements" in result.output
+    finally:
+        config_path.unlink()
+
+
+def test_cli_requirements_without_config(test_files):
+    """Test CLI with requirements checking but no config file."""
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "--manifest",
+            str(test_files["manifest"]),
+            "--compiled-sql",
+            str(test_files["sql_dir"]),
+            "--dialect",
+            "postgres",
+            "--check-requirements",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert (
+        "--requirements-config is required when --check-requirements is used"
+        in result.output
+    )

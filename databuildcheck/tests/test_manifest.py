@@ -175,11 +175,15 @@ def test_get_all_referenceable_tables(manifest_file):
     assert len(referenceable_tables) > 0
 
     # Check that we have entries for models
-    model_refs = [ref for ref, data in referenceable_tables.items() if data["type"] == "model"]
+    model_refs = [
+        ref for ref, data in referenceable_tables.items() if data["type"] == "model"
+    ]
     assert len(model_refs) > 0
 
     # Check that we have entries for sources
-    source_refs = [ref for ref, data in referenceable_tables.items() if data["type"] == "source"]
+    source_refs = [
+        ref for ref, data in referenceable_tables.items() if data["type"] == "source"
+    ]
     assert len(source_refs) > 0
 
 

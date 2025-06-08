@@ -10,18 +10,32 @@
       "resource_type": "model",
       "package_name": "my_project",
       "original_file_path": "models/users.sql",
+      "description": "User data model with basic information",
       "columns": {
         "id": {
           "name": "id",
-          "data_type": "integer"
+          "data_type": "integer",
+          "description": "Unique identifier for users"
         },
         "name": {
           "name": "name",
-          "data_type": "varchar"
+          "data_type": "varchar",
+          "description": "User's full name"
         },
         "email": {
           "name": "email",
-          "data_type": "varchar"
+          "data_type": "varchar",
+          "description": "User's email address"
+        },
+        "created_at": {
+          "name": "created_at",
+          "data_type": "timestamp",
+          "description": "Timestamp when the user was created"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "data_type": "timestamp",
+          "description": "Timestamp when the user was last updated"
         }
       }
     },

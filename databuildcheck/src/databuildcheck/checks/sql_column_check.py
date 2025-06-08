@@ -90,7 +90,7 @@ class SqlColumnChecker:
         if isinstance(parsed_sql, exp.Select):
             # Direct SELECT statement
             final_select = parsed_sql
-        elif hasattr(parsed_sql, 'find'):
+        elif hasattr(parsed_sql, "find"):
             # Find the outermost SELECT (not nested in CTEs or subqueries)
             # We want the top-level SELECT that produces the final result
             if isinstance(parsed_sql, exp.Query):

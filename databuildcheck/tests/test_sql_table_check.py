@@ -221,7 +221,11 @@ def test_apply_table_reference_substitutions(dbt_manifest, sql_files_dir):
     original_refs = {"raw_db.raw.users", "raw_db.raw.orders", "other_table"}
     substituted_refs = checker._apply_table_reference_substitutions(original_refs)
 
-    expected_refs = {"production_db.prod_raw.users", "production_db.prod_raw.orders", "other_table"}
+    expected_refs = {
+        "production_db.prod_raw.users",
+        "production_db.prod_raw.orders",
+        "other_table",
+    }
     assert substituted_refs == expected_refs
 
 
@@ -261,7 +265,9 @@ def test_check_all_models(dbt_manifest, sql_files_dir):
 
     # Find results by node_id
     users_result = next(r for r in results if r["node_id"] == "model.my_project.users")
-    orders_result = next(r for r in results if r["node_id"] == "model.my_project.orders")
+    orders_result = next(
+        r for r in results if r["node_id"] == "model.my_project.orders"
+    )
 
     # Users should be valid
     assert users_result["references_valid"] is True

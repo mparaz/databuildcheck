@@ -1,0 +1,176 @@
+# Sample configuration file for databuildcheck manifest validation
+# This file defines requirements for dbt models based on various criteria
+
+# Global column requirements - these columns are required for ALL models
+required_columns:
+  always:
+    - name: "created_at"
+      description: "Timestamp when the record was created"
+      data_type: "timestamp"
+    - name: "updated_at" 
+      description: "Timestamp when the record was last updated"
+      data_type: "timestamp"
+
+# Requirements based on model materialization type
+materialization_requirements:
+  table:
+    required_columns:
+      - name: "id"
+        description: "Primary key for the table"
+        data_type: "integer"
+    
+  view:
+    required_columns: []
+    
+  incremental:
+    required_columns:
+      - name: "id"
+        description: "Primary key for incremental models"
+        data_type: "integer"
+      - name: "updated_at"
+        description: "Required for incremental models to track changes"
+        data_type: "timestamp"
+    
+  snapshot:
+    required_columns:
+      - name: "dbt_scd_id"
+        description: "Snapshot surrogate key"
+        data_type: "string"
+      - name: "dbt_updated_at"
+        description: "Snapshot updated timestamp"
+        data_type: "timestamp"
+      - name: "dbt_valid_from"
+        description: "Snapshot valid from timestamp"
+        data_type: "timestamp"
+      - name: "dbt_valid_to"
+        description: "Snapshot valid to timestamp"
+        data_type: "timestamp"
+
+# Requirements based on incremental strategy (only applies to incremental models)
+incremental_strategy_requirements:
+  merge:
+    required_columns:
+      - name: "id"
+        description: "Unique identifier required for merge strategy"
+        data_type: "integer"
+      - name: "updated_at"
+        description: "Timestamp for merge strategy"
+        data_type: "timestamp"
+        
+  append:
+    required_columns:
+      - name: "created_at"
+        description: "Creation timestamp for append strategy"
+        data_type: "timestamp"
+        
+  delete_insert:
+    required_columns:
+      - name: "partition_key"
+        description: "Partition key for delete+insert strategy"
+        data_type: "string"
+      - name: "updated_at"
+        description: "Timestamp for delete+insert strategy"
+        data_type: "timestamp"
+
+# Requirements based on model tags
+tag_requirements:
+  pii:
+    required_columns:
+      - name: "data_classification"
+        description: "Data classification level for PII models"
+        data_type: "string"
+      - name: "last_accessed"
+        description: "Last access timestamp for PII tracking"
+        data_type: "timestamp"
+        
+  financial:
+    required_columns:
+      - name: "audit_trail"
+        description: "Audit trail for financial data"
+        data_type: "string"
+      - name: "compliance_flag"
+        description: "Compliance validation flag"
+        data_type: "boolean"
+
+# Requirements based on model package
+package_requirements:
+  finance_models:
+    required_columns:
+      - name: "fiscal_year"
+        description: "Fiscal year for financial models"
+        data_type: "integer"
+      - name: "currency_code"
+        description: "Currency code for financial amounts"
+        data_type: "string"
+        
+  marketing_models:
+    required_columns:
+      - name: "campaign_id"
+        description: "Marketing campaign identifier"
+        data_type: "string"
+      - name: "attribution_model"
+        description: "Attribution model used"
+        data_type: "string"
+
+# Column validation rules
+column_validation:
+  # Ensure certain columns have descriptions
+  require_descriptions:
+    - "id"
+    - "created_at"
+    - "updated_at"
+    - "user_id"
+    - "customer_id"
+    
+  # Ensure certain columns have specific data types
+  enforce_data_types:
+    timestamp_columns:
+      - "created_at"
+      - "updated_at"
+      - "deleted_at"
+      - "last_login"
+    
+    id_columns:
+      - "id"
+      - "user_id"
+      - "customer_id"
+      - "order_id"
+      
+    boolean_columns:
+      - "is_active"
+      - "is_deleted"
+      - "is_verified"
+
+# Model-level requirements
+model_requirements:
+  # All models must have a description
+  require_description: true
+  
+  # All models must have at least one test
+  require_tests: true
+  
+  # Specific materialization requirements
+  materialization_rules:
+    # Large tables should use table materialization
+    table_size_threshold: 1000000  # rows
+    
+    # Views should not have certain configurations
+    view_restrictions:
+      - "pre_hook"
+      - "post_hook"
+      - "indexes"
+
+# Exclusions - models that are exempt from certain requirements
+exclusions:
+  # Models that don't need timestamp columns
+  timestamp_exempt:
+    - "dim_date"
+    - "lookup_tables.*"  # regex pattern
+    
+  # Models that don't need descriptions
+  description_exempt:
+    - "staging.*"  # regex pattern
+    
+  # Models exempt from all requirements (use sparingly)
+  fully_exempt:
+    - "temp_model_for_testing"
