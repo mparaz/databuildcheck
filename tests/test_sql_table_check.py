@@ -316,3 +316,51 @@ def test_extract_table_references_excludes_ctes(dbt_manifest, sql_files_dir):
     # Should NOT contain CTE names
     cte_names = {"user_stats", "active_users"}
     assert not any(cte in table_refs for cte in cte_names)
+
+
+def test_extract_table_references_union(dbt_manifest, sql_files_dir):
+    """Test extracting table references from SQL with UNION statements."""
+    checker = SqlTableChecker(dbt_manifest, sql_files_dir, "postgres")
+
+    # Create a SQL file with UNION
+    sql_file = sql_files_dir / "models" / "union_test.sql"
+    sql_content = """
+    SELECT
+        user_id as id,
+        first_name as name,
+        email_address as email,
+        'active' as user_type
+    FROM raw_db.raw.raw_users
+    WHERE active = true
+
+    UNION ALL
+
+    SELECT
+        user_id as id,
+        first_name as name,
+        email_address as email,
+        'inactive' as user_type
+    FROM analytics.public.inactive_users
+    WHERE deleted = false
+
+    UNION ALL
+
+    SELECT
+        customer_id as id,
+        customer_name as name,
+        contact_email as email,
+        'customer' as user_type
+    FROM warehouse.crm.customers
+    """
+    sql_file.write_text(sql_content)
+
+    parsed = checker._parse_sql_file(sql_file)
+    table_refs = checker._extract_table_references(parsed)
+
+    # Should contain all table references from all parts of the UNION
+    expected_refs = {
+        "raw_db.raw.raw_users",
+        "analytics.public.inactive_users",
+        "warehouse.crm.customers"
+    }
+    assert table_refs == expected_refs

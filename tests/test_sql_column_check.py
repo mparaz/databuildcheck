@@ -243,3 +243,38 @@ def test_extract_columns_with_cte(dbt_manifest, sql_files_dir):
     # Should NOT contain columns from CTEs like user_id, first_name, last_name, etc.
     cte_columns = {"user_id", "first_name", "last_name"}
     assert not any(col in columns for col in cte_columns)
+
+
+def test_extract_columns_with_union(dbt_manifest, sql_files_dir):
+    """Test extracting columns from SQL with UNION statements."""
+    checker = SqlColumnChecker(dbt_manifest, sql_files_dir, "postgres")
+
+    # Create a SQL file with UNION
+    sql_file = sql_files_dir / "models" / "union_columns_test.sql"
+    sql_content = """
+    SELECT
+        user_id as id,
+        first_name as name,
+        email_address as email,
+        'active' as status
+    FROM users
+    WHERE active = true
+
+    UNION ALL
+
+    SELECT
+        user_id as id,
+        first_name as name,
+        email_address as email,
+        'inactive' as status
+    FROM users
+    WHERE active = false
+    """
+    sql_file.write_text(sql_content)
+
+    parsed = checker._parse_sql_file(sql_file)
+    columns = checker._extract_columns_from_sql(parsed)
+
+    # Should get columns from the UNION result
+    expected_columns = {"id", "name", "email", "status"}
+    assert columns == expected_columns

@@ -80,6 +80,36 @@
           "data_type": "varchar"
         }
       }
+    },
+    "model.my_project.users_union": {
+      "name": "users_union",
+      "unique_id": "model.my_project.users_union",
+      "resource_type": "model",
+      "package_name": "my_project",
+      "original_file_path": "models/users_union.sql",
+      "description": "User data model with UNION of active and inactive users",
+      "columns": {
+        "id": {
+          "name": "id",
+          "data_type": "integer",
+          "description": "Unique identifier for users"
+        },
+        "name": {
+          "name": "name",
+          "data_type": "varchar",
+          "description": "User's full name"
+        },
+        "email": {
+          "name": "email",
+          "data_type": "varchar",
+          "description": "User's email address"
+        },
+        "user_type": {
+          "name": "user_type",
+          "data_type": "varchar",
+          "description": "Type of user (active or inactive)"
+        }
+      }
     }
   },
   "sources": {
